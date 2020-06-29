@@ -26,6 +26,40 @@
 
 int main(void)
 {
-    gpio_init();
-	for(;;);
+    //GPIO_Handle_t button_pin = { .port = GPIO_PORT_A, .pin = 0 };
+    //GPIO_PinConfig_t gpio_config = { .PinMode = GPIO_MODE_INPUT };
+
+    GPIO_Handle_t green_led = { .port = GPIO_PORT_D, .pin = 12 };
+    GPIO_Handle_t orange_led = { .port = GPIO_PORT_D, .pin = 13 };
+    GPIO_Handle_t red_led = { .port = GPIO_PORT_D, .pin = 14 };
+    GPIO_Handle_t blue_led = { .port = GPIO_PORT_D, .pin = 15 };
+
+    GPIO_PinConfig_t gpio_config = {
+        .PinMode = GPIO_MODE_OUTPUT
+    };
+
+    // GPIO Init test
+    GPIO_Init(&green_led, &gpio_config);
+    GPIO_Init(&orange_led, &gpio_config);
+    GPIO_Init(&red_led, &gpio_config);
+    GPIO_Init(&blue_led, &gpio_config);
+
+
+    GPIO_WritePin(&green_led, 1);
+    GPIO_WritePin(&orange_led, 1);
+    GPIO_WritePin(&red_led, 1);
+    GPIO_WritePin(&blue_led, 1);
+
+    GPIO_WritePin(&green_led, 0);
+    GPIO_WritePin(&orange_led, 0);
+    GPIO_WritePin(&red_led, 0);
+    GPIO_WritePin(&blue_led, 0);
+
+
+    //GPIO_WritePort(GPIO_PORT_D, 0xF000);
+    //GPIO_WritePort(GPIO_PORT_D, 0x0000);
+
+	for(;;) {
+	    //uint8_t state = GPIO_ReadPin(&led_pin);
+	}
 }
