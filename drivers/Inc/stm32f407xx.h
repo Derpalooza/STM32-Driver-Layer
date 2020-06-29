@@ -132,6 +132,8 @@ typedef struct {} USART_t;
 #define RCC                     ((RCC_t*)RCC_BASE)
 
 /* Clock enable macros for GPIO Peripheral */
+#define GPIO_CLK_ENABLE(port)   (RCC->AHB1ENR |= (1 << (port)))
+#define GPIO_CLK_DISABLE(port)  (RCC->AHB1ENR &= ~(1 << (port)))
 #define GPIOA_CLK_ENABLE()      (RCC->AHB1ENR |= (1 << 0))
 #define GPIOB_CLK_ENABLE()      (RCC->AHB1ENR |= (1 << 1))
 #define GPIOC_CLK_ENABLE()      (RCC->AHB1ENR |= (1 << 2))
@@ -191,5 +193,11 @@ typedef struct {} USART_t;
 /* Clock enable macros for SYSCFG Peripheral */
 #define SYSCFG_CLK_ENABLE()     (RCC->APB2ENR |= (1 << 14))
 #define SYSCFG_CLK_DISABLE()    (RCC->APB2ENR &= ~(1 << 14))
+
+/* Generic Macros */
+#define ENABLE      1
+#define DISABLE     0
+#define SET         ENABLE
+#define RESET       DISABLE
 
 #endif /* INC_STM32F407XX_H_ */
