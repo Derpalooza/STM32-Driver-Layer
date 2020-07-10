@@ -22,44 +22,124 @@
 #endif
 
 #include "stm32f407xx.h"
-#include "gpio.h"
 
-int main(void)
-{
-    //GPIO_Handle_t button_pin = { .port = GPIO_PORT_A, .pin = 0 };
-    //GPIO_PinConfig_t gpio_config = { .PinMode = GPIO_MODE_INPUT };
+#include "gpio.h"
+#include "interrupt.h"
+
+//#define GPIO_TEST
+#define INTERRUPT_TEST
+
+void gpio_callback(GPIO_Handle_t *handle, void *context) {
+    GPIO_Handle_t *leds = (GPIO_Handle_t*) context;
+
+    for (int i = 0; i < 4; i++) {
+        GPIO_TogglePin(&leds[i]);
+    }
+}
+
+void delay(void) {
+    for (uint32_t i = 0; i < 500000/2; i++);
+}
+
+void gpio_test(void) {
+    GPIO_Handle_t button = { .port = GPIO_PORT_A, .pin = 0 };
 
     GPIO_Handle_t green_led = { .port = GPIO_PORT_D, .pin = 12 };
     GPIO_Handle_t orange_led = { .port = GPIO_PORT_D, .pin = 13 };
     GPIO_Handle_t red_led = { .port = GPIO_PORT_D, .pin = 14 };
     GPIO_Handle_t blue_led = { .port = GPIO_PORT_D, .pin = 15 };
 
-    GPIO_PinConfig_t gpio_config = {
-        .PinMode = GPIO_MODE_OUTPUT
+    GPIO_PinConfig_t led_config = {
+        .PinMode = GPIO_MODE_OUTPUT,
+        .PinOutputType = GPIO_OUTPUT_PUSH_PULL,
+        .PinSpeed = GPIO_SPEED_LOW,
+        .PinResistor = GPIO_RES_NONE,
     };
 
-    // GPIO Init test
-    GPIO_Init(&green_led, &gpio_config);
-    GPIO_Init(&orange_led, &gpio_config);
-    GPIO_Init(&red_led, &gpio_config);
-    GPIO_Init(&blue_led, &gpio_config);
+    GPIO_PinConfig_t button_config = {
+        .PinMode = GPIO_MODE_INPUT
+    };
 
 
-    GPIO_WritePin(&green_led, 1);
-    GPIO_WritePin(&orange_led, 1);
-    GPIO_WritePin(&red_led, 1);
-    GPIO_WritePin(&blue_led, 1);
+    // Init button
+    GPIO_Init(&button, &button_config);
 
-    GPIO_WritePin(&green_led, 0);
-    GPIO_WritePin(&orange_led, 0);
-    GPIO_WritePin(&red_led, 0);
-    GPIO_WritePin(&blue_led, 0);
+    // Init LEDs
+    GPIO_Init(&green_led, &led_config);
+    GPIO_Init(&orange_led, &led_config);
+    GPIO_Init(&red_led, &led_config);
+    GPIO_Init(&blue_led, &led_config);
 
+    uint8_t state;
+    while(1) {
+        state = GPIO_ReadPin(&button);
+        if (state) {
+            GPIO_TogglePin(&green_led);
+            GPIO_TogglePin(&orange_led);
+            GPIO_TogglePin(&red_led);
+            GPIO_TogglePin(&blue_led);
+        }
 
-    //GPIO_WritePort(GPIO_PORT_D, 0xF000);
-    //GPIO_WritePort(GPIO_PORT_D, 0x0000);
+        while (state) {
+            state = GPIO_ReadPin(&button);
+        }
+    }
+}
 
-	for(;;) {
-	    //uint8_t state = GPIO_ReadPin(&led_pin);
-	}
+void interrupt_test(void) {
+    // Initialize Button
+    GPIO_Handle_t button = { .port = GPIO_PORT_A, .pin = 0 };
+
+    GPIO_PinConfig_t button_config = {
+        .PinMode = GPIO_MODE_INPUT
+    };
+
+    GPIO_Init(&button, &button_config);
+
+    // Initialize LEDs
+    GPIO_Handle_t leds[] = {
+        { .port = GPIO_PORT_D, .pin = 12 },
+        { .port = GPIO_PORT_D, .pin = 13 },
+        { .port = GPIO_PORT_D, .pin = 14 },
+        { .port = GPIO_PORT_D, .pin = 15 }
+    };
+
+    GPIO_PinConfig_t led_config = {
+        .PinMode = GPIO_MODE_OUTPUT,
+        .PinOutputType = GPIO_OUTPUT_PUSH_PULL,
+        .PinSpeed = GPIO_SPEED_LOW,
+        .PinResistor = GPIO_RES_NONE,
+    };
+
+    for (uint8_t i = 0; i < 4; i++) {
+        GPIO_Init(&leds[i], &led_config);
+    }
+
+    // Initialize interrupt module
+    Interrupt_Init();
+
+    GPIO_InterruptSettings_t it_settings = {
+        .edge_trigger = INTERRUPT_EDGE_FALLING,
+        .priority = INTERRUPT_NVIC_PRI10,
+        .type = INTERRUPT_TYPE_INTERRUPT
+    };
+
+    // Configure Button interrupt
+    GPIO_RegisterInterrupt(&button, &it_settings, gpio_callback, leds);
+
+    while(1) { }
+}
+
+int main(void)
+{
+
+#ifdef GPIO_TEST
+    gpio_test();
+#endif
+
+#ifdef INTERRUPT_TEST
+    interrupt_test();
+#endif
+
+	while(1) { 	}
 }

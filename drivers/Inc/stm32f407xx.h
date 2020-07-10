@@ -9,6 +9,20 @@
 
 #define __IO    volatile
 
+/************** Processor Specific **************/
+/* NVIC Interrupt set-enable register addresses*/
+#define NVIC_ISER_BASE          ((__IO uint32_t*)0xE000E100U)
+#define NVIC_ISER_LEN           8
+
+/* NVIC Interrupt clear-enable register addresses */
+#define NVIC_ICER_BASE          ((__IO uint32_t*)0xE000E180U)
+#define NVIC_ICER_LEN           8
+
+/* NVIC Interrupt priority register addresses*/
+#define NVIC_PR_BASE            ((__IO uint32_t*)0xE000E400U)
+#define NVIC_PR_LEN             60
+
+/**************  Microcontroller Specific **************/
 /* Flash and SRAM base addresses */
 #define FLASH_BASE_ADDRESS      0x08000000U
 #define SRAM1_BASE_ADDRESS      0x20000000U
@@ -80,7 +94,7 @@ typedef struct {
     __IO uint32_t APB2RSTR;     /* RCC APB2 peripheral reset register */
     uint32_t RESERVED1;
     uint32_t RESERVED2;
-    __IO uint32_t AHB1ENR;      /* RCC AHB1 peripheral clock register */
+    __IO uint32_t AHB1ENR;      /* RCC AHB1 peripheral clock enable register */
     __IO uint32_t AHB2ENR;      /* RCC AHB2 peripheral clock enable register */
     __IO uint32_t AHB3ENR;      /* RCC AHB3 peripheral clock enable register */
     uint32_t RESERVED3;
@@ -106,6 +120,25 @@ typedef struct {
     __IO uint32_t DCKCFGR;      /* RCC Dedicated Clock Configuration Register */
 } RCC_t;
 
+/* EXTI Peripheral Register Structure */
+typedef struct {
+    __IO uint32_t IMR;          /* EXTI Interrupt mask register */
+    __IO uint32_t EMR;          /* EXTI Event mask register */
+    __IO uint32_t RTSR;         /* EXTI Rising trigger selection register */
+    __IO uint32_t FTSR;         /* EXTI Falling trigger selection register */
+    __IO uint32_t SWIER;        /* EXTI Software interrupt event register */
+    __IO uint32_t PR;           /* EXTI Pending register */
+} EXTI_t;
+
+/* SYSCFG Peripheral Register Structure */
+typedef struct {
+    __IO uint32_t MEMRMP;       /* SYSCFG Memory remap register */
+    __IO uint32_t PMC;          /* SYSCFG Peripheral mode configuration register */
+    __IO uint32_t EXTICR[4];    /* SYSCFG External interrupt configuration registers */
+    uint32_t RESERVED[2];
+    __IO uint32_t CMPCR;        /* SYSCFG Compensation control register */
+} SYSCFG_t;
+
 /* SPI Peripheral Register Structure */
 typedef struct {} SPI_t;
 
@@ -130,29 +163,12 @@ typedef struct {} USART_t;
 #define GPIOI                   ((GPIO_t*)GPIOI_BASE)
 
 #define RCC                     ((RCC_t*)RCC_BASE)
+#define EXTI                    ((EXTI_t*)EXTI_BASE)
+#define SYSCFG                  ((SYSCFG_t*)SYSCFG_BASE)
 
 /* Clock enable macros for GPIO Peripheral */
 #define GPIO_CLK_ENABLE(port)   (RCC->AHB1ENR |= (1 << (port)))
 #define GPIO_CLK_DISABLE(port)  (RCC->AHB1ENR &= ~(1 << (port)))
-#define GPIOA_CLK_ENABLE()      (RCC->AHB1ENR |= (1 << 0))
-#define GPIOB_CLK_ENABLE()      (RCC->AHB1ENR |= (1 << 1))
-#define GPIOC_CLK_ENABLE()      (RCC->AHB1ENR |= (1 << 2))
-#define GPIOD_CLK_ENABLE()      (RCC->AHB1ENR |= (1 << 3))
-#define GPIOE_CLK_ENABLE()      (RCC->AHB1ENR |= (1 << 4))
-#define GPIOF_CLK_ENABLE()      (RCC->AHB1ENR |= (1 << 5))
-#define GPIOG_CLK_ENABLE()      (RCC->AHB1ENR |= (1 << 6))
-#define GPIOH_CLK_ENABLE()      (RCC->AHB1ENR |= (1 << 7))
-#define GPIOI_CLK_ENABLE()      (RCC->AHB1ENR |= (1 << 8))
-
-#define GPIOA_CLK_DISABLE()     (RCC->AHB1ENR &= ~(1 << 0))
-#define GPIOB_CLK_DISABLE()     (RCC->AHB1ENR &= ~(1 << 1))
-#define GPIOC_CLK_DISABLE()     (RCC->AHB1ENR &= ~(1 << 2))
-#define GPIOD_CLK_DISABLE()     (RCC->AHB1ENR &= ~(1 << 3))
-#define GPIOE_CLK_DISABLE()     (RCC->AHB1ENR &= ~(1 << 4))
-#define GPIOF_CLK_DISABLE()     (RCC->AHB1ENR &= ~(1 << 5))
-#define GPIOG_CLK_DISABLE()     (RCC->AHB1ENR &= ~(1 << 6))
-#define GPIOH_CLK_DISABLE()     (RCC->AHB1ENR &= ~(1 << 7))
-#define GPIOI_CLK_DISABLE()     (RCC->AHB1ENR &= ~(1 << 8))
 
 /* Clock enable macros for I2C Peripheral */
 #define I2C1_CLK_ENABLE()       (RCC->APB1ENR |= (1 << 21))
@@ -194,10 +210,21 @@ typedef struct {} USART_t;
 #define SYSCFG_CLK_ENABLE()     (RCC->APB2ENR |= (1 << 14))
 #define SYSCFG_CLK_DISABLE()    (RCC->APB2ENR &= ~(1 << 14))
 
+/* IRQ Numbers */
+#define EXTI0_IRQ               6
+#define EXTI1_IRQ               7
+#define EXTI2_IRQ               8
+#define EXTI3_IRQ               9
+#define EXTI4_IRQ               10
+#define EXTI9_5_IRQ             23
+#define EXTI15_10_IRQ           40
+#define NUM_IRQS                82
+
 /* Generic Macros */
 #define ENABLE      1
 #define DISABLE     0
 #define SET         ENABLE
 #define RESET       DISABLE
+#define NULL        0
 
 #endif /* INC_STM32F407XX_H_ */

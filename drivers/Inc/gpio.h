@@ -5,6 +5,7 @@
 
 #include <stdint.h>
 #include "gpio_defs.h"
+#include "interrupt.h"
 
 typedef struct {
     GPIO_Port_t port;
@@ -12,12 +13,20 @@ typedef struct {
 } GPIO_Handle_t;
 
 typedef struct {
-    uint8_t PinMode;        /* Specifies IO direction mode */
-    uint8_t PinOutputType;  /* Configure pin as open drain or push-pull */
-    uint8_t PinSpeed;       /* Configure slew rate of pin */
-    uint8_t PinResistor;    /* Configure the internal pull-up/pull-down resistors */
-    uint8_t PinAltFunction; /* Selects alt fn. Ignored if PinMode is not set to alt fn*/
+    GPIO_Mode_t PinMode;              /* Specifies IO direction mode */
+    GPIO_OutputType_t PinOutputType;  /* Configure pin as open drain or push-pull */
+    GPIO_OutputSpeed_t PinSpeed;      /* Configure slew rate of pin */
+    GPIO_ResMode_t PinResistor;       /* Configure the internal pull-up/pull-down resistors */
+    GPIO_AltFn_t PinAltFunction;      /* Selects altfn if PinMode is set to altfn mode*/
 } GPIO_PinConfig_t;
+
+typedef struct {
+    InterruptEdge_t edge_trigger;
+    InterruptPriority_t priority;
+    InterruptType_t type;
+} GPIO_InterruptSettings_t;
+
+typedef void (*GPIO_Callback_t)(GPIO_Handle_t *handle, void *context);
 
 /* Initializes the given pin with the provided settings */
 void GPIO_Init(GPIO_Handle_t *handle, GPIO_PinConfig_t *config);
@@ -35,8 +44,9 @@ void GPIO_WritePort(GPIO_Port_t port, uint16_t state);
 void GPIO_TogglePin(GPIO_Handle_t *handle);
 
 /* Interrupt configuration */
-//void GPIO_ConfigureInterrupt(void);
-//void GPIO_RegisterInterrupt(void);
-
+void GPIO_RegisterInterrupt(GPIO_Handle_t *handle,
+                            GPIO_InterruptSettings_t *it_settings,
+                            GPIO_Callback_t callback,
+                            void *context);
 
 #endif /* INC_GPIO_H_ */
