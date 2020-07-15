@@ -7,6 +7,8 @@
 
 #include <stdint.h>
 
+#define __I     volatile const
+#define __O     volatile
 #define __IO    volatile
 
 /************** Processor Specific **************/
@@ -140,7 +142,16 @@ typedef struct {
 } SYSCFG_t;
 
 /* SPI Peripheral Register Structure */
-typedef struct {} SPI_t;
+typedef struct {
+    __IO uint32_t CR[2];        /* SPI Control Register */
+    __IO uint32_t SR;           /* SPI Status Register */
+    __IO uint32_t DR;           /* SPI Data Register */
+    __IO uint32_t CRCPR;        /* SPI CRC Polynomial Register */
+    __IO uint32_t RXCRCR;       /* SPI RX CRC Register */
+    __IO uint32_t TXCRCR;       /* SPI TX CRC Register */
+    __IO uint32_t I2SCFGR;      /* SPI/I2S Configuration Register*/
+    __IO uint32_t I2SPR;        /* SPI/I2S Prescaler Register */
+} SPI_t;
 
 /* I2C Peripheral Register Structure */
 typedef struct {} I2C_t;
@@ -217,7 +228,10 @@ typedef struct {} USART_t;
 #define EXTI3_IRQ               9
 #define EXTI4_IRQ               10
 #define EXTI9_5_IRQ             23
+#define SPI1_IRQ                35
+#define SPI2_IRQ                36
 #define EXTI15_10_IRQ           40
+#define SPI3_IRQ                51
 #define NUM_IRQS                82
 
 /* Generic Macros */
