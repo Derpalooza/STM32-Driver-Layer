@@ -143,7 +143,8 @@ typedef struct {
 
 /* SPI Peripheral Register Structure */
 typedef struct {
-    __IO uint32_t CR[2];        /* SPI Control Register */
+    __IO uint32_t CR1;          /* SPI Control Register 1 */
+    __IO uint32_t CR2;          /* SPI Control Register 2 */
     __IO uint32_t SR;           /* SPI Status Register */
     __IO uint32_t DR;           /* SPI Data Register */
     __IO uint32_t CRCPR;        /* SPI CRC Polynomial Register */
@@ -173,9 +174,50 @@ typedef struct {} USART_t;
 #define GPIOH                   ((GPIO_t*)GPIOH_BASE)
 #define GPIOI                   ((GPIO_t*)GPIOI_BASE)
 
+#define SPI1                    ((SPI_t*)SPI1_BASE)
+#define SPI2                    ((SPI_t*)SPI2_BASE)
+#define SPI3                    ((SPI_t*)SPI3_BASE)
+
 #define RCC                     ((RCC_t*)RCC_BASE)
 #define EXTI                    ((EXTI_t*)EXTI_BASE)
 #define SYSCFG                  ((SYSCFG_t*)SYSCFG_BASE)
+
+/* RCC Register Bit Positions */
+#define RCC_APB1RSTR_TIM2       0
+#define RCC_APB1RSTR_TIM3       1
+#define RCC_APB1RSTR_TIM4       2
+#define RCC_APB1RSTR_TIM5       3
+#define RCC_APB1RSTR_TIM6       4
+#define RCC_APB1RSTR_TIM7       5
+#define RCC_APB1RSTR_TIM12      6
+#define RCC_APB1RSTR_TIM13      7
+#define RCC_APB1RSTR_TIM14      8
+#define RCC_APB1RSTR_WWDG       11
+#define RCC_APB1RSTR_SPI2       14
+#define RCC_APB1RSTR_SPI3       15
+#define RCC_APB1RSTR_USART2     17
+#define RCC_APB1RSTR_USART3     18
+#define RCC_APB1RSTR_UART4      19
+#define RCC_APB1RSTR_UART5      20
+#define RCC_APB1RSTR_I2C1       21
+#define RCC_APB1RSTR_I2C2       22
+#define RCC_APB1RSTR_I2C3       23
+#define RCC_APB1RSTR_CAN1       25
+#define RCC_APB1RSTR_CAN2       26
+#define RCC_APB1RSTR_PWR        28
+#define RCC_APB1RSTR_DAC        29
+
+#define RCC_APB2RSTR_TIM1       0
+#define RCC_APB2RSTR_TIM8       1
+#define RCC_APB2RSTR_USART1     4
+#define RCC_APB2RSTR_USART6     5
+#define RCC_APB2RSTR_ADC        8
+#define RCC_APB2RSTR_SDIO       11
+#define RCC_APB2RSTR_SPI1       12
+#define RCC_APB2RSTR_SYSCFG     14
+#define RCC_APB2RSTR_TIM9       16
+#define RCC_APB2RSTR_TIM10      17
+#define RCC_APB2RSTR_TIM11      18
 
 /* Clock enable macros for GPIO Peripheral */
 #define GPIO_CLK_ENABLE(port)   (RCC->AHB1ENR |= (1 << (port)))
@@ -239,6 +281,42 @@ typedef struct {} USART_t;
 #define DISABLE     0
 #define SET         ENABLE
 #define RESET       DISABLE
+
+#ifndef NULL
 #define NULL        0
+#endif
+
+/* SPI Register Bit Positions */
+#define SPI_CR1_BIDIMODE        15
+#define SPI_CR1_BIDIOE          14
+#define SPI_CR1_CRCEN           13
+#define SPI_CR1_CRCNEXT         12
+#define SPI_CR1_DFF             11
+#define SPI_CR1_RXONLY          10
+#define SPI_CR1_SSM             9
+#define SPI_CR1_SSI             8
+#define SPI_CR1_LSBFIRST        7
+#define SPI_CR1_SPE             6
+#define SPI_CR1_BR              3
+#define SPI_CR1_MSTR            2
+#define SPI_CR1_CPOL            1
+#define SPI_CR1_CPHA            0
+
+#define SPI_CR2_TXEIE           7
+#define SPI_CR2_RXNEIE          6
+#define SPI_CR2_ERRIE           5
+#define SPI_CR2_FRF             4
+#define SPI_CR2_SSOE            2
+#define SPI_CR2_TXDMAEN         1
+#define SPI_CR2_RXDMAEN         0
+
+#define SPI_SR_FRE              8
+#define SPI_SR_BSY              7
+#define SPI_SR_OVR              6
+#define SPI_SR_MODF             5
+#define SPI_SR_CRC_ERR          4
+#define SPI_SR_TXE              1
+#define SPI_SR_RXNE             0
+
 
 #endif /* INC_STM32F407XX_H_ */

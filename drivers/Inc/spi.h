@@ -2,6 +2,7 @@
 #define INC_SPI_H_
 
 /* SPI Driver for the STM32F407xx MCU */
+/* GPIO Pins must be configured before SPI port is initialized */
 
 #include "stm32f407xx.h"
 #include "gpio.h"
@@ -46,37 +47,45 @@ typedef enum {
 typedef enum {
     SPI_FULL_DUPLEX_MODE = 0,
     SPI_SIMPLEX_RX_MODE,
+    SPI_SIMPLEX_TX_MODE,
     SPI_HALF_DUPLEX_TX_MODE,
     SPI_HALF_DUPLEX_RX_MODE,
+    NUM_SPI_DIRS,
 } SPI_Direction_t;
 
+typedef enum {
+    SPI_SSM_DISABLE = 0,
+    SPI_SSM_ENABLE,
+    NUM_SPI_SSM
+} SPI_SSM_t;
+
 typedef struct {
-    SPI_Mode_t type;
+    SPI_Mode_t mode;
     SPI_Direction_t direction;
     SPI_DataFormat_t data_format;
     SPI_FrameFormat_t frame_format;
     SPI_Prescaler_t prescaler;
-    uint8_t SSM;
+    SPI_SSM_t SSM;
     uint8_t CPHA;
     uint8_t CPOL;
 } SPI_Settings_t;
 
-typedef struct {
-    GPIO_Handle_t SCK;
-    GPIO_Handle_t MOSI;
-    GPIO_Handle_t MISO;
-    GPIO_Handle_t NSS;
-} SPI_PinConfig_t;
-
 typedef void(*SPI_Callback_t)(SPI_Port_t port, void *context);
 
-// Initializes SPI Port to given settings
-int SPI_Init(SPI_Port_t port, SPI_Settings_t *settings, SPI_PinConfig_t *pins);
+// Initializes SPI Port to given settings, and initializes given GPIO Pins
+int SPI_Init(SPI_Port_t port, SPI_Settings_t *settings);
 
 // Resets the SPI Port to its default setting
 int SPI_Reset(SPI_Port_t port);
 
-// Blocking Send and Receive calls
+// Enable SPI Port. Call before starting SPI communication
+int SPI_Enable(SPI_Port_t port);
+
+// Disable SPI Port. Call before starting SPI communication
+int SPI_Disable(SPI_Port_t port);
+
+// Blocking Send and Receive calls. |len| refers to the number of data elements in
+// the buffer, not the number of bytes.
 int SPI_TransmitData(SPI_Port_t port, uint8_t *tx_data, uint32_t len);
 int SPI_ReceiveData(SPI_Port_t port, uint8_t *rx_data, uint32_t len);
 
