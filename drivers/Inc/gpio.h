@@ -2,6 +2,7 @@
 #define INC_GPIO_H_
 
 /* GPIO Driver for the STM32F407xx MCU */
+/* TODO: Change API so that functions return 1 on error */
 
 #include <stdint.h>
 #include "gpio_defs.h"
@@ -9,7 +10,7 @@
 
 typedef struct {
     GPIO_Port_t port;
-    uint8_t pin;
+    GPIO_Pin_t pin;
 } GPIO_Handle_t;
 
 typedef struct {
