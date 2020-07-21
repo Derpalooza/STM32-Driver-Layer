@@ -2,14 +2,12 @@
 #include "stm32f407xx.h"
 #include "interrupt.h"
 
-#define NUM_GPIO_PINS_PER_PORT  16
-
 /* Mapping between port registers */
 static GPIO_t* GPIO_PortMap[] = {
     GPIOA, GPIOB, GPIOC, GPIOD, GPIOE, GPIOF, GPIOG, GPIOH, GPIOI
 };
 
-static uint8_t IRQ_NumberMap[NUM_GPIO_PINS_PER_PORT] = {
+static uint8_t IRQ_NumberMap[NUM_GPIO_PINS] = {
     EXTI0_IRQ,
     EXTI1_IRQ,
     EXTI2_IRQ,
@@ -35,7 +33,7 @@ typedef struct {
     void *context;
 } InterruptData;
 
-static InterruptData interrupts[NUM_GPIO_PINS_PER_PORT] = { 0 };
+static InterruptData interrupts[NUM_GPIO_PINS] = { 0 };
 
 static void GPIO_ClockControl(GPIO_Port_t port, uint8_t status) {
     // TODO: Add check for invalid params
@@ -47,6 +45,10 @@ static void GPIO_ClockControl(GPIO_Port_t port, uint8_t status) {
 }
 
 void GPIO_Init(GPIO_Handle_t *handle, GPIO_PinConfig_t *config) {
+    if (handle == NULL || config == NULL) {
+        return;
+    }
+
     uint8_t port = handle->port;
     uint8_t pin = handle->pin;
 
@@ -99,12 +101,23 @@ void GPIO_Init(GPIO_Handle_t *handle, GPIO_PinConfig_t *config) {
 }
 
 void GPIO_Reset(uint8_t port) {
+    // Toggle Reset register
     RCC->AHB1RSTR |= (1 << port);
     RCC->AHB1RSTR &= ~(1 << port);
+
+    for (uint8_t i = 0; i < NUM_GPIO_PINS; i++) {
+        interrupts[i].callback = NULL;
+        interrupts[i].context = NULL;
+        interrupts[i].handle = (GPIO_Handle_t){ 0 };
+    }
 
 }
 
 uint8_t GPIO_ReadPin(GPIO_Handle_t *handle) {
+    if (handle == NULL) {
+        return 0;
+    }
+
     uint8_t port = handle->port;
     uint8_t pin = handle->pin;
 
@@ -125,6 +138,10 @@ uint16_t GPIO_ReadPort(GPIO_Port_t port) {
 }
 
 void GPIO_WritePin(GPIO_Handle_t *handle, uint8_t state) {
+    if (handle == NULL) {
+        return;
+    }
+
     // Since we are setting individual bits, we use the BSRR register for atomic writes
     uint8_t port = handle->port;
     uint8_t pin = handle->pin;
@@ -153,6 +170,10 @@ void GPIO_WritePort(GPIO_Port_t port, uint16_t state) {
 }
 
 void GPIO_TogglePin(GPIO_Handle_t *handle) {
+    if (handle == NULL) {
+        return;
+    }
+
     uint8_t port = handle->port;
     uint8_t pin = handle->pin;
 
@@ -165,7 +186,7 @@ void GPIO_RegisterInterrupt(GPIO_Handle_t *handle,
                             GPIO_InterruptSettings_t *it_settings,
                             GPIO_Callback_t callback,
                             void *context) {
-    if (context == NULL || callback == NULL) {
+    if (handle == NULL || it_settings == NULL || context == NULL || callback == NULL) {
         return;
     }
 
