@@ -265,12 +265,16 @@ int SPI_TransmitData(SPI_Port_t port, uint8_t *tx_data, uint32_t len) {
             SPIx->DR = tx_data[i];
 
             // Ensure register is read to avoid overrun
-            //while (SPI_GetFlagStatus(port, SPI_RXNE_FLAG) == RESET);
-            //uint16_t temp = SPIx->DR;
+            while (SPI_GetFlagStatus(port, SPI_RXNE_FLAG) == RESET);
+            uint8_t temp = SPIx->DR;
         }
         else {
             // Treat as 16 bit value
             SPIx->DR = (uint16_t)tx_data[i];
+
+            // Ensure register is read to avoid overrun
+            while (SPI_GetFlagStatus(port, SPI_RXNE_FLAG) == RESET);
+            uint16_t temp = SPIx->DR;
 
             // Make sure i increments by two per iteration to get the index
             // of the next 16 bit element
@@ -298,15 +302,24 @@ int SPI_ReceiveData(SPI_Port_t port, uint8_t *rx_data, uint32_t len) {
     }
 
     for (uint32_t i = 0; i < len; i++) {
-        // Wait until data appears in register and then read new data
-        while (SPI_GetFlagStatus(port, SPI_RXNE_FLAG) == RESET);
-
         if (dff == SPI_DATA_FORMAT_8_BIT) {
+            // Dummy write to initiate data transfer
+            uint8_t temp = 0xFF;
+            while (SPI_GetFlagStatus(port, SPI_TXE_FLAG) == RESET);
+            SPIx->DR = temp;
+
+            // Wait until data appears in register and then read new data
+            while (SPI_GetFlagStatus(port, SPI_RXNE_FLAG) == RESET);
             rx_data[i] = SPIx->DR;
         }
         else {
-            // Account for little-endianness when recreating the 16-bit
-            // value from tx_data
+            // Dummy write to initiate data transfer
+            uint16_t temp = 0xFFFF;
+            while (SPI_GetFlagStatus(port, SPI_TXE_FLAG) == RESET);
+            SPIx->DR = temp;
+
+            // Wait until data appears in register and then read new data
+            while (SPI_GetFlagStatus(port, SPI_RXNE_FLAG) == RESET);
             *((uint16_t*)&rx_data[i]) = SPIx->DR;
 
             // Make sure i increments by two per iteration to get the index
