@@ -39,11 +39,13 @@ typedef enum {
     GPIO_MODE_OUTPUT,
     GPIO_MODE_ALTFN,
     GPIO_MODE_ANALOG,
+    NUM_GPIO_MODES
 } GPIO_Mode_t;
 
 typedef enum {
     GPIO_OUTPUT_PUSH_PULL = 0,
     GPIO_OUTPUT_OPEN_DRAIN,
+    NUM_GPIO_OUTPUT_TYPES
 } GPIO_OutputType_t;
 
 typedef enum {
@@ -57,6 +59,7 @@ typedef enum {
     GPIO_RES_NONE = 0,
     GPIO_RES_PULL_UP,
     GPIO_RES_PULL_DOWN,
+    NUM_GPIO_RES
 } GPIO_ResMode_t;
 
 typedef enum {
@@ -76,6 +79,7 @@ typedef enum {
     GPIO_ALTFN_13,
     GPIO_ALTFN_14,
     GPIO_ALTFN_15,
+    NUM_GPIO_ALTFNS
 } GPIO_AltFn_t;
 
 #endif /* INC_GPIO_DEFS_H_ */

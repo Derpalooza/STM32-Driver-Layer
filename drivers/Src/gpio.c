@@ -83,11 +83,9 @@ void GPIO_Init(GPIO_Handle_t *handle, GPIO_PinConfig_t *config) {
     }
 
     // Set Output type
-    if (mode == GPIO_MODE_OUTPUT) {
-        uint8_t output_type = config->PinOutputType & 0x03;
-        GPIOx->OTYPER &= ~(1 << pin);
-        GPIOx->OTYPER |= (output_type << pin);
-    }
+    uint8_t output_type = config->PinOutputType & 0x03;
+    GPIOx->OTYPER &= ~(1 << pin);
+    GPIOx->OTYPER |= (output_type << pin);
 
     // Set Speed register
     uint8_t speed = config->PinSpeed & 0x03;
