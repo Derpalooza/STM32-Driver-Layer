@@ -224,6 +224,8 @@ int SPI_Enable(SPI_Port_t port) {
 
     // Enable SPI Peripheral
     SPIx->CR1 |= SPI_ENABLE_MASK;
+
+    return 0;
 }
 
 int SPI_Disable(SPI_Port_t port) {
@@ -234,6 +236,8 @@ int SPI_Disable(SPI_Port_t port) {
 
     // Disable SPI Peripheral
     SPIx->CR1 &= ~SPI_ENABLE_MASK;
+
+    return 0;
 }
 
 int SPI_TransmitData(SPI_Port_t port, uint8_t *tx_data, uint32_t len) {
@@ -261,12 +265,11 @@ int SPI_TransmitData(SPI_Port_t port, uint8_t *tx_data, uint32_t len) {
             SPIx->DR = tx_data[i];
 
             // Ensure register is read to avoid overrun
-            while (SPI_GetFlagStatus(port, SPI_RXNE_FLAG) == RESET);
-            uint16_t temp = SPIx->DR;
+            //while (SPI_GetFlagStatus(port, SPI_RXNE_FLAG) == RESET);
+            //uint16_t temp = SPIx->DR;
         }
         else {
-            // Account for little-endianness when recreating the 16-bit
-            // value from tx_data
+            // Treat as 16 bit value
             SPIx->DR = (uint16_t)tx_data[i];
 
             // Make sure i increments by two per iteration to get the index
@@ -279,9 +282,40 @@ int SPI_TransmitData(SPI_Port_t port, uint8_t *tx_data, uint32_t len) {
 }
 
 int SPI_ReceiveData(SPI_Port_t port, uint8_t *rx_data, uint32_t len) {
+    if (rx_data == NULL || len <= 0 || port > NUM_SPI_PORTS) {
+        // Invalid Parameters
+        return 1;
+    }
+    // Get SPI Port pointer
     SPI_t *SPIx = SPI_PortMap[port];
 
-    return 1;
+    // Check if Data Format is 8 or 16 bit
+    uint8_t dff;
+    if (SPIx->CR1 & SPI_DFF_MASK) {
+        dff = SPI_DATA_FORMAT_16_BIT;
+    } else {
+        dff = SPI_DATA_FORMAT_8_BIT;
+    }
+
+    for (uint32_t i = 0; i < len; i++) {
+        // Wait until data appears in register and then read new data
+        while (SPI_GetFlagStatus(port, SPI_RXNE_FLAG) == RESET);
+
+        if (dff == SPI_DATA_FORMAT_8_BIT) {
+            rx_data[i] = SPIx->DR;
+        }
+        else {
+            // Account for little-endianness when recreating the 16-bit
+            // value from tx_data
+            *((uint16_t*)&rx_data[i]) = SPIx->DR;
+
+            // Make sure i increments by two per iteration to get the index
+            // of the next 16 bit element
+            i++;
+        }
+    }
+
+    return 0;
 }
 
 // Register interrupt
