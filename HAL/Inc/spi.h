@@ -2,10 +2,13 @@
 #define INC_SPI_H_
 
 /* SPI Driver for the STM32F407xx MCU */
-/* GPIO Pins must be configured before SPI port is initialized */
 
-#include "stm32f407xx.h"
-#include "gpio.h"
+/* GPIO Pins must be configured before SPI port is initialized */
+/* Interrupt must be initialized before non blocking calls are used */
+
+#include <gpio.h>
+#include <interrupt.h>
+#include <stm32f407xx.h>
 
 typedef enum {
     SPI_PORT_1 = 0,
@@ -84,14 +87,16 @@ int SPI_Enable(SPI_Port_t port);
 // Disable SPI Port. Call before starting SPI communication
 int SPI_Disable(SPI_Port_t port);
 
-// Blocking Send and Receive calls. |len| refers to the number of data elements in
-// the buffer, not the number of bytes.
+// Polling based blocking TX and RX calls. |len| refers to the number of data
+// elements in the buffer, not the number of bytes.
 int SPI_TransmitData(SPI_Port_t port, uint8_t *tx_data, uint32_t len);
 int SPI_ReceiveData(SPI_Port_t port, uint8_t *rx_data, uint32_t len);
 
-// Register interrupt
-int SPI_RegisterCallback(SPI_Port_t port,
-                         SPI_Callback_t tx_callback,
-                         SPI_Callback_t rx_callback,
-                         void *context);
+// Configure SPI interrupts. Call before making nonblocking transfers
+int SPI_Interrupt_Config(SPI_Port_t port, InterruptPriority_t priority);
+
+// Interrupt based nonblocking TX and RX calls
+int SPI_TransmitData_NonBlocking(SPI_Port_t port, uint8_t *tx_data, uint32_t len);
+int SPI_ReceiveData_NonBlocking(SPI_Port_t port, uint8_t *rx_data, uint32_t len);
+
 #endif /* INC_SPI_H_ */

@@ -270,6 +270,10 @@ typedef struct {} USART_t;
 #define EXTI3_IRQ               9
 #define EXTI4_IRQ               10
 #define EXTI9_5_IRQ             23
+#define I2C1_EV                 31
+#define I2C1_ER                 32
+#define I2C2_EV                 33
+#define I2C2_ER                 34
 #define SPI1_IRQ                35
 #define SPI2_IRQ                36
 #define EXTI15_10_IRQ           40

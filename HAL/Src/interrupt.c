@@ -1,5 +1,5 @@
-#include "interrupt.h"
-#include "stm32f407xx.h"
+#include <interrupt.h>
+#include <stm32f407xx.h>
 
 #define NUM_EXTI_LINES  22
 

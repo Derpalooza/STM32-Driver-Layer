@@ -35,6 +35,7 @@ typedef enum {
     INTERRUPT_NVIC_PRI13,
     INTERRUPT_NVIC_PRI14,
     INTERRUPT_NVIC_PRI15,
+    NUM_INTERRUPT_PRIORITIES
 } InterruptPriority_t;
 
 // Initialize interrupt

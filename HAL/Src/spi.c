@@ -1,11 +1,10 @@
-#include "spi.h"
-
-#include "stm32f407xx.h"
+#include <spi.h>
+#include <stm32f407xx.h>
 
 // Flag Bitmasks
 #define SPI_TXE_FLAG        (1 << SPI_SR_TXE)
 #define SPI_RXNE_FLAG       (1 << SPI_SR_RXNE)
-#define SPI_BSY_FLAG       (1 << SPI_SR_BSY)
+#define SPI_BSY_FLAG        (1 << SPI_SR_BSY)
 
 // Register Bitmasks
 #define SPI_ENABLE_MASK     (1 << SPI_CR1_SPE)
@@ -20,19 +19,36 @@
 #define SPI_CPHA_MASK       (1 << SPI_CR1_CPHA)
 #define SPI_SSM_MASK        (1 << SPI_CR1_SSM)
 #define SPI_SSI_MASK        (1 << SPI_CR1_SSI)
-
 #define SPI_SSOE_MASK       (1 << SPI_CR2_SSOE)
+#define SPI_TXEIE_MASK      (1 << SPI_CR2_TXEIE)
+#define SPI_RXNEIE_MASK     (1 << SPI_CR2_RXNEIE)
 
 // RCC Reset masks
 #define SPI1_RESET_MASK     (1 << RCC_APB2RSTR_SPI1)
 #define SPI2_RESET_MASK     (1 << RCC_APB1RSTR_SPI2)
 #define SPI3_RESET_MASK     (1 << RCC_APB1RSTR_SPI3)
 
+// SPI Port states
+#define SPI_STATE_READY     0
+#define SPI_STATE_TX_BUSY   1
+#define SPI_STATE_RX_BUSY   2
+
+typedef struct {
+    uint8_t *tx_buffer;
+    uint8_t *rx_buffer;
+    uint32_t tx_len;
+    uint32_t rx_len;
+    uint8_t tx_state;
+    uint8_t rx_state;
+} SPI_InterruptData;
+
 static SPI_t* SPI_PortMap[] = {
     [SPI_PORT_1] = SPI1,
     [SPI_PORT_2] = SPI2,
     [SPI_PORT_3] = SPI3
 };
+
+static SPI_InterruptData interrupts[NUM_SPI_PORTS] = { 0 };
 
 // Check the state of the given flag for the given SPI port
 static uint8_t SPI_GetFlagStatus(SPI_Port_t port, uint32_t flag) {
@@ -216,6 +232,15 @@ int SPI_Reset(SPI_Port_t port) {
         return 1;
     }
 
+    // Return interrupt to default values
+    for (uint8_t i = 0; i < NUM_SPI_PORTS; i++) {
+        interrupts[i].tx_buffer = NULL;
+        interrupts[i].rx_buffer = NULL;
+        interrupts[i].tx_len = 0;
+        interrupts[i].rx_len = 0;
+        interrupts[i].tx_state = SPI_STATE_READY;
+        interrupts[i].rx_state = SPI_STATE_READY;
+    }
     return 0;
 }
 
@@ -331,19 +356,187 @@ int SPI_ReceiveData(SPI_Port_t port, uint8_t *rx_data, uint32_t len) {
     return 0;
 }
 
-// Register interrupt
-int SPI_RegisterCallback(SPI_Port_t port,
-                         SPI_Callback_t tx_callback,
-                         SPI_Callback_t rx_callback,
-                         void *context) {
-    return 1;
+int SPI_Interrupt_Config(SPI_Port_t port, InterruptPriority_t priority) {
+    if (port > NUM_SPI_PORTS || priority > NUM_INTERRUPT_PRIORITIES) {
+        // Invalid arguments
+        return 1;
+    }
+
+    // Get interrupt channel
+    uint8_t irq_channel;
+    if (port == SPI_PORT_1) {
+        irq_channel = SPI1_IRQ;
+    } else if (port == SPI_PORT_2) {
+        irq_channel = SPI2_IRQ;
+    } else {
+        irq_channel = SPI3_IRQ;
+    }
+
+    Interrupt_NVIC_Config(irq_channel, ENABLE);
+    Interrupt_NVIC_SetPriority(irq_channel, priority);
+
+    return 0;
+}
+
+int SPI_TransmitData_NonBlocking(SPI_Port_t port, uint8_t *tx_data, uint32_t len) {
+    if (port >= NUM_SPI_PORTS || tx_data == NULL || len == 0) {
+        // Invalid parameters
+        return 1;
+    }
+
+    if (interrupts[port].tx_state != SPI_STATE_READY) {
+        // Resource busy
+        return 1;
+    }
+
+    SPI_t *SPIx = SPI_PortMap[port];
+
+    // Save TX buffer address and length information
+    interrupts[port].tx_buffer = tx_data;
+    interrupts[port].tx_len = len;
+
+    // Mark the SPI as busy so that no other code can take over this SPI peripheral until
+    // transmission is over
+    interrupts[port].tx_state = SPI_STATE_TX_BUSY;
+
+    // Enable TX interrupt
+    SPIx->CR2 |= SPI_TXEIE_MASK;
+
+    // Data transmission will be handled by ISR code
+    return 0;
+}
+
+int SPI_ReceiveData_NonBlocking(SPI_Port_t port, uint8_t *rx_data, uint32_t len) {
+    if (port >= NUM_SPI_PORTS || rx_data == NULL || len == 0) {
+        // Invalid parameters
+        return 1;
+    }
+
+    if (interrupts[port].rx_state != SPI_STATE_READY) {
+        // Resource busy
+        return 1;
+    }
+
+    SPI_t *SPIx = SPI_PortMap[port];
+
+    // RX buffer address and length information
+    interrupts[port].rx_buffer = rx_data;
+    interrupts[port].rx_len = len;
+
+    // Mark the SPI as busy so that no other code can take over this SPI peripheral until
+    // transmission is over
+    interrupts[port].tx_state = SPI_STATE_TX_BUSY;
+
+    // Enable RX interrupt
+    SPIx->CR2 |= SPI_RXNEIE_MASK;
+
+    // Data transmission will be handled by ISR code
+    return 0;
 }
 
 /************** SPI Interrupt Handlers **************/
 
+void tx_interrupt_handler(SPI_Port_t port) {
+    SPI_t *SPIx = SPI_PortMap[port];
+
+    uint8_t dff;
+    if (SPIx->CR1 & SPI_DFF_MASK) {
+        dff = SPI_DATA_FORMAT_16_BIT;
+    } else {
+        dff = SPI_DATA_FORMAT_8_BIT;
+    }
+
+    // Transfer 1 byte of data
+    SPI_TransmitData(SPI_PORT_2, interrupts[port].tx_buffer, 1);
+
+    // Decrement length
+    interrupts[port].tx_len--;
+
+    // Increment buffer pointer
+    if (dff == SPI_DATA_FORMAT_16_BIT) {
+        (uint16_t*)(interrupts[port].tx_buffer)++;
+    } else {
+        interrupts[port].tx_buffer++;
+    }
+
+    // Disable the interrupt if no more bytes need to be sent
+    if (interrupts[port].tx_len == 0) {
+        SPIx->CR2 &= ~SPI_TXEIE_MASK;
+    }
+}
+void rx_interrupt_handler(SPI_Port_t port) {}
+
+void spi_interrupt_handler(SPI_Port_t port) {
+    SPI_t *SPIx = SPI_PortMap[port];
+
+    uint8_t dff;
+    if (SPIx->CR1 & SPI_DFF_MASK) {
+        dff = SPI_DATA_FORMAT_16_BIT;
+    } else {
+        dff = SPI_DATA_FORMAT_8_BIT;
+    }
+
+    // Check if this is a TX interrupt
+    uint8_t interrupt_enable = SPIx->CR2 |= SPI_TXEIE_MASK;
+    uint8_t interrupt_status = SPI_GetFlagStatus(port, SPI_TXE_FLAG);
+    if (interrupt_enable && interrupt_status) {
+        tx_interrupt_handler(port);
+    }
+
+    // Check if this is an RX interrupt
+    interrupt_enable = SPIx->CR2 |= SPI_RXNEIE_MASK;
+    interrupt_status = SPI_GetFlagStatus(port, SPI_RXNE_FLAG);
+    if (interrupt_enable && interrupt_status) {
+        rx_interrupt_handler(port);
+    }
+
+    // This is an error condition
+}
+
 void SPI1_IRQHandler() {}
 
-void SPI2_IRQHandler() {}
+void SPI2_IRQHandler() {
+    SPI_t *SPIx = SPI_PortMap[SPI_PORT_2];
+
+    uint8_t dff;
+    if (SPIx->CR1 & SPI_DFF_MASK) {
+        dff = SPI_DATA_FORMAT_16_BIT;
+    } else {
+        dff = SPI_DATA_FORMAT_8_BIT;
+    }
+
+    // Check if this is a TX interrupt
+    uint8_t interrupt_enable = SPIx->CR2 |= SPI_TXEIE_MASK;
+    uint8_t interrupt_status = SPI_GetFlagStatus(SPI_PORT_2, SPI_TXE_FLAG);
+    if (interrupt_enable && interrupt_status) {
+        // Transfer 1 byte of data
+        SPI_TransmitData(SPI_PORT_2, interrupts[SPI_PORT_2].tx_buffer, 1);
+
+        // Decrement length
+        interrupts[SPI_PORT_2].tx_len--;
+
+        // Increment buffer pointer
+        if (dff == SPI_DATA_FORMAT_16_BIT) {
+            (uint16_t*)(interrupts[SPI_PORT_2].tx_buffer)++;
+        } else {
+            interrupts[SPI_PORT_2].tx_buffer++;
+        }
+
+        // Disable the interrupt if no more bytes need to be sent
+        if (interrupts[SPI_PORT_2].tx_len == 0) {
+            SPIx->CR2 &= ~SPI_TXEIE_MASK;
+        }
+    }
+
+    // Check if this is an RX interrupt
+    /*uint8_t interrupt_enable = SPIx->CR2 |= SPI_RXNEIE_MASK;
+    uint8_t interrupt_status = SPI_GetFlagStatus(SPI_PORT_2, SPI_RXNE_FLAG);
+    if (interrupt_enable && interrupt_status) {
+
+    }*/
+
+    // This is an error condition
+}
 
 void SPI3_IRQHandler() {}
 

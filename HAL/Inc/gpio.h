@@ -4,9 +4,10 @@
 /* GPIO Driver for the STM32F407xx MCU */
 /* TODO: Change API so that functions return 1 on error */
 
+#include <gpio_defs.h>
+#include <interrupt.h>
 #include <stdint.h>
-#include "gpio_defs.h"
-#include "interrupt.h"
+
 
 typedef struct {
     GPIO_Port_t port;
