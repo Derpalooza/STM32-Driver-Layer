@@ -53,6 +53,13 @@ static void clock_control(I2C_Port_t port) {
     }
 }
 
+static uint8_t get_flag_status(I2C_t* I2Cx, uint32_t flag) {
+    if (I2Cx->SR1 && flag) {
+        return SET;
+    }
+    return RESET;
+}
+
 static uint8_t address_phase(I2C_t* I2Cx, uint8_t addr, bool read) {
     // The master sends the slave address in the first 7 bits
     uint8_t temp_reg = (addr << 1);
@@ -68,9 +75,9 @@ static uint8_t address_phase(I2C_t* I2Cx, uint8_t addr, bool read) {
     I2Cx->DR = temp_reg;
 
     // Wait until the address has been sent
-    while (!(I2Cx->SR1 & I2C_ADDR_MASK)) {
+    while (!get_flag_status(I2Cx, I2C_ADDR_MASK)) {
         // If a NACK is detected, return 0 so the function doesn't block
-        if (I2Cx->SR1 & I2C_NACK_MASK) {
+        if (get_flag_status(I2Cx, I2C_NACK_MASK)) {
             return 0;
         }
     }
@@ -146,13 +153,13 @@ void i2c_start(I2C_Port_t port) {
     I2C_t* I2Cx = I2C_PortMap[port];
 
     // Wait until the BUSY flag is cleared
-    while ((I2Cx->SR2 & I2C_BUSY_MASK)) {}
+    while ((I2Cx->SR2 && I2C_BUSY_MASK)) {}
 
     // Set the START bit
     I2Cx->CR1 |= I2C_START_MASK;
 
     // Wait until the start condition has been sent
-    while (!(I2Cx->SR1 & I2C_SB_MASK)) {}
+    while (!get_flag_status(I2Cx, I2C_SB_MASK)) {}
 }
 
 int i2c_read(I2C_Port_t port, uint8_t addr, uint8_t *data, uint8_t len) {
@@ -168,14 +175,14 @@ int i2c_read(I2C_Port_t port, uint8_t addr, uint8_t *data, uint8_t len) {
 
     // Begin receiving data
     for (uint32_t i = 0; i < len; i++) {
-        // Wait until the master has received a byte
-        while(!(I2Cx->SR1 & I2C_RXNE_MASK)) {}
-
         // To end the reception, a NACK must be sent for the final byte. Thus,
         // after reading the second-last byte, the ACK bit must be set to 0
         if (i == (len-1)) {
             I2Cx->CR1 &= ~I2C_ACK_MASK;
         }
+
+        // Wait until the master has received a byte
+        while (!get_flag_status(I2Cx, I2C_RXNE_MASK)) {}
 
         // Store data in rx buffer
         data[i] = I2Cx->DR;
@@ -201,14 +208,15 @@ int i2c_write(I2C_Port_t port, uint8_t addr, uint8_t *data, uint8_t len) {
     // Begin transmitting data
     for (uint32_t i = 0; i < len; i++) {
         // Wait until the data register is empty
-        while (!(I2Cx->SR1 & I2C_TXE_MASK)) {}
+        while (!get_flag_status(I2Cx, I2C_TXE_MASK)) {}
 
         // Write byte to the data register
         I2Cx->DR = data[i];
     }
 
     // Wait until the byte transfer is complete before a stop request can be made
-    while (!(I2Cx->SR1 & I2C_BTF_MASK) || !(I2Cx->SR1 & I2C_TXE_MASK)) {}
+    while (!get_flag_status(I2Cx, I2C_TXE_MASK)) {}
+    while (!get_flag_status(I2Cx, I2C_BTF_MASK)) {}
 
     return 1;
 }
