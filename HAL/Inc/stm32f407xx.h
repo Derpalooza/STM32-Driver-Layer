@@ -6,6 +6,7 @@
  */
 
 #include <stdint.h>
+#include <stdbool.h>
 
 #define __I     volatile const
 #define __O     volatile
@@ -155,7 +156,17 @@ typedef struct {
 } SPI_t;
 
 /* I2C Peripheral Register Structure */
-typedef struct {} I2C_t;
+typedef struct {
+    __IO uint32_t CR1;           /* I2C Control Register 1 */
+    __IO uint32_t CR2;           /* I2C Control Register 2 */
+    __IO uint32_t OAR1;          /* I2C Own Address Register 1 */
+    __IO uint32_t OAR2;          /* I2C Own Address Register 2 */
+    __IO uint32_t DR;            /* I2C Data Register */
+    __IO uint32_t SR1;           /* I2C Status Register 1 */
+    __IO uint32_t SR2;           /* I2C Status Register 2 */
+    __IO uint32_t CCR;           /* I2C Clock Control Register */
+    __IO uint32_t TRISE;         /* I2C TRISE Register */
+} I2C_t;
 
 /* UART Peripheral Register Structure */
 typedef struct {} UART_t;
@@ -177,6 +188,10 @@ typedef struct {} USART_t;
 #define SPI1                    ((SPI_t*)SPI1_BASE)
 #define SPI2                    ((SPI_t*)SPI2_BASE)
 #define SPI3                    ((SPI_t*)SPI3_BASE)
+
+#define I2C1                    ((I2C_t*)I2C1_BASE)
+#define I2C2                    ((I2C_t*)I2C2_BASE)
+#define I2C3                    ((I2C_t*)I2C3_BASE)
 
 #define RCC                     ((RCC_t*)RCC_BASE)
 #define EXTI                    ((EXTI_t*)EXTI_BASE)
@@ -224,44 +239,44 @@ typedef struct {} USART_t;
 #define GPIO_CLK_DISABLE(port)  (RCC->AHB1ENR &= ~(1 << (port)))
 
 /* Clock enable macros for I2C Peripheral */
-#define I2C1_CLK_ENABLE()       (RCC->APB1ENR |= (1 << 21))
-#define I2C2_CLK_ENABLE()       (RCC->APB1ENR |= (1 << 22))
-#define I2C3_CLK_ENABLE()       (RCC->APB1ENR |= (1 << 23))
+#define I2C1_CLK_ENABLE()       (RCC->APB1ENR |= (1 << RCC_APB1RSTR_I2C1))
+#define I2C2_CLK_ENABLE()       (RCC->APB1ENR |= (1 << RCC_APB1RSTR_I2C2))
+#define I2C3_CLK_ENABLE()       (RCC->APB1ENR |= (1 << RCC_APB1RSTR_I2C3))
 
-#define I2C1_CLK_DISABLE()      (RCC->APB1ENR &= ~(1 << 21))
-#define I2C2_CLK_DISABLE()      (RCC->APB1ENR &= ~(1 << 22))
-#define I2C3_CLK_DISABLE()      (RCC->APB1ENR &= ~(1 << 23))
+#define I2C1_CLK_DISABLE()      (RCC->APB1ENR &= ~(1 << RCC_APB1RSTR_I2C1))
+#define I2C2_CLK_DISABLE()      (RCC->APB1ENR &= ~(1 << RCC_APB1RSTR_I2C2))
+#define I2C3_CLK_DISABLE()      (RCC->APB1ENR &= ~(1 << RCC_APB1RSTR_I2C3))
 
 /* Clock enable macros for SPI Peripheral */
-#define SPI1_CLK_ENABLE()       (RCC->APB2ENR |= (1 << 12))
-#define SPI2_CLK_ENABLE()       (RCC->APB1ENR |= (1 << 14))
-#define SPI3_CLK_ENABLE()       (RCC->APB1ENR |= (1 << 15))
+#define SPI1_CLK_ENABLE()       (RCC->APB2ENR |= (1 << RCC_APB2RSTR_SPI1))
+#define SPI2_CLK_ENABLE()       (RCC->APB1ENR |= (1 << RCC_APB1RSTR_SPI2))
+#define SPI3_CLK_ENABLE()       (RCC->APB1ENR |= (1 << RCC_APB1RSTR_SPI3))
 
-#define SPI1_CLK_DISABLE()       (RCC->APB2ENR &= ~(1 << 12))
-#define SPI2_CLK_DISABLE()       (RCC->APB1ENR &= ~(1 << 14))
-#define SPI3_CLK_DISABLE()       (RCC->APB1ENR &= ~(1 << 15))
+#define SPI1_CLK_DISABLE()       (RCC->APB2ENR &= ~(1 << RCC_APB2RSTR_SPI1))
+#define SPI2_CLK_DISABLE()       (RCC->APB1ENR &= ~(1 << RCC_APB1RSTR_SPI2))
+#define SPI3_CLK_DISABLE()       (RCC->APB1ENR &= ~(1 << RCC_APB1RSTR_SPI3))
 
 /* Clock enable macros for UART Peripheral */
-#define UART4_CLK_ENABLE()      (RCC->APB1ENR |= (1 << 19))
-#define UART5_CLK_ENABLE()      (RCC->APB1ENR |= (1 << 20))
+#define UART4_CLK_ENABLE()      (RCC->APB1ENR |= (1 << RCC_APB1RSTR_UART4))
+#define UART5_CLK_ENABLE()      (RCC->APB1ENR |= (1 << RCC_APB1RSTR_UART5))
 
-#define UART4_CLK_DISABLE()     (RCC->APB1ENR &= ~(1 << 19))
-#define UART5_CLK_DISABLE()     (RCC->APB1ENR &= ~(1 << 20))
+#define UART4_CLK_DISABLE()     (RCC->APB1ENR &= ~(1 << RCC_APB1RSTR_UART4))
+#define UART5_CLK_DISABLE()     (RCC->APB1ENR &= ~(1 << RCC_APB1RSTR_UART5))
 
 /* Clock enable macros for USART Peripheral */
-#define USART1_CLK_ENABLE()     (RCC->APB2ENR |= (1 << 4))
-#define USART2_CLK_ENABLE()     (RCC->APB1ENR |= (1 << 17))
-#define USART3_CLK_ENABLE()     (RCC->APB1ENR |= (1 << 18))
-#define USART6_CLK_ENABLE()     (RCC->APB2ENR |= (1 << 5))
+#define USART1_CLK_ENABLE()     (RCC->APB2ENR |= (1 << RCC_APB2RSTR_USART1))
+#define USART2_CLK_ENABLE()     (RCC->APB1ENR |= (1 << RCC_APB1RSTR_USART2))
+#define USART3_CLK_ENABLE()     (RCC->APB1ENR |= (1 << RCC_APB1RSTR_USART3))
+#define USART6_CLK_ENABLE()     (RCC->APB2ENR |= (1 << RCC_APB2RSTR_USART6))
 
-#define USART1_CLK_DISABLE()    (RCC->APB2ENR &= ~(1 << 4))
-#define USART2_CLK_DISABLE()    (RCC->APB1ENR &= ~(1 << 17))
-#define USART3_CLK_DISABLE()    (RCC->APB1ENR &= ~(1 << 18))
-#define USART6_CLK_DISABLE()    (RCC->APB2ENR &= ~(1 << 5))
+#define USART1_CLK_DISABLE()    (RCC->APB2ENR &= ~(1 << RCC_APB2RSTR_USART1))
+#define USART2_CLK_DISABLE()    (RCC->APB1ENR &= ~(1 << RCC_APB1RSTR_USART2))
+#define USART3_CLK_DISABLE()    (RCC->APB1ENR &= ~(1 << RCC_APB1RSTR_USART3))
+#define USART6_CLK_DISABLE()    (RCC->APB2ENR &= ~(1 << RCC_APB2RSTR_USART6))
 
 /* Clock enable macros for SYSCFG Peripheral */
-#define SYSCFG_CLK_ENABLE()     (RCC->APB2ENR |= (1 << 14))
-#define SYSCFG_CLK_DISABLE()    (RCC->APB2ENR &= ~(1 << 14))
+#define SYSCFG_CLK_ENABLE()     (RCC->APB2ENR |= (1 << RCC_APB2RSTR_SYSCFG))
+#define SYSCFG_CLK_DISABLE()    (RCC->APB2ENR &= ~(1 << RCC_APB2RSTR_SYSCFG))
 
 /* IRQ Numbers */
 #define EXTI0_IRQ               6
@@ -290,7 +305,23 @@ typedef struct {} USART_t;
 #define NULL        0
 #endif
 
-/* SPI Register Bit Positions */
+/* I2C Peripheral Bit Positions */
+#define I2C_CCR_FASTMODE        15
+#define I2C_CCR_DUTY            14
+#define I2C_OAR1_ADDRMODE       15
+#define I2C_CR1_ENABLE          0
+#define I2C_CR1_START           8
+#define I2C_CR1_STOP            9
+#define I2C_CR1_ACK             10
+#define I2C_SR1_SB              0
+#define I2C_SR1_ADDR            1
+#define I2C_SR1_BTF             2
+#define I2C_SR1_TXE             7
+#define I2C_SR1_RXNE            8
+#define I2C_SR1_AF              10
+#define I2C_SR2_BSY             1
+
+/* SPI Peripheral Bit Positions */
 #define SPI_CR1_BIDIMODE        15
 #define SPI_CR1_BIDIOE          14
 #define SPI_CR1_CRCEN           13
